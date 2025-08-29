@@ -30,6 +30,6 @@ export function formatCurrencyFull(
 }
 
 // Number formatting utilities
-export function formatNumber(num: number): string {
-  return new Intl.NumberFormat().format(num);
+export function formatNumber(num: number, locale: string = "vi-VN"): string {
+  return new Intl.NumberFormat(locale).format(num);
 }
