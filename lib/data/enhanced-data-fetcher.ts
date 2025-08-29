@@ -267,7 +267,9 @@ async function fetchWithPagination(
       console.error(`    ❌ Error in request ${requestCount}:`, error);
 
       // If it's a rate limiting error, wait longer and try once more
-      if (error.message.includes("429") || error.message.includes("rate")) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("429") || errorMessage.includes("rate")) {
         console.log(`    ⏳ Rate limited, waiting 3 seconds...`);
         await new Promise((resolve) => setTimeout(resolve, 3000));
         if (requestCount < MAX_REQUESTS) {
