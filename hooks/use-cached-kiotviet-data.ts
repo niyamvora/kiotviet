@@ -5,7 +5,9 @@
 
 import { useState, useEffect } from 'react';
 import { dataSyncService } from '@/lib/data-sync-service';
+import { supabase } from '@/lib/supabase';
 import { DataType, TimeRange } from './use-dashboard-filters';
+import { generateDemoData as originalGenerateDemoData } from './use-kiotviet-data';
 
 interface DashboardData {
   overview: {
@@ -78,145 +80,130 @@ export function useCachedKiotVietData(
         setLoading(true);
         setError(null);
 
-        // Initialize user
-        const userId = await dataSyncService.initializeUser();
-        if (!userId) {
-          console.log('📊 User not authenticated - showing demo data');
-          setData(generateDemoData(timeRange));
-          setHasCredentials(false);
-          setLoading(false);
-          return;
-        }
-
-        // Check if user has KiotViet credentials
-        const { data: { user } } = await dataSyncService.supabase.auth.getUser();
+        // Check for existing KiotViet credentials (with proper error handling)
         let userCredentials = null;
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user) {
+            const { data: creds, error: credsError } = await supabase
+              .from("user_credentials")
+              .select("*")
+              .eq("user_id", user.id)
+              .single();
 
-        if (user) {
-          const { data: creds, error: credsError } = await dataSyncService.supabase
-            .from("user_credentials")
-            .select("*")
-            .eq("user_id", user.id)
-            .single();
-
-          if (creds && !credsError) {
-            userCredentials = creds;
-            setHasCredentials(true);
+            if (creds && !credsError) {
+              userCredentials = creds;
+              setHasCredentials(true);
+              console.log('✅ Found KiotViet credentials for user:', creds.shop_name);
+            } else {
+              setHasCredentials(false);
+              console.log('📊 No KiotViet credentials found - using demo data');
+            }
           } else {
             setHasCredentials(false);
+            console.log('👤 No authenticated user - using demo data');
           }
+        } catch (authError) {
+          console.warn('⚠️ Authentication check failed:', authError);
+          setHasCredentials(false);
         }
 
         if (!userCredentials) {
-          console.log('📊 No KiotViet credentials - showing demo data');
+          console.log('📊 Loading demo data');
           setData(generateDemoData(timeRange));
           setLoading(false);
           return;
         }
 
-        // Set KiotViet API credentials
-        const { kiotVietAPI } = await import('@/lib/kiotviet-api');
-        kiotVietAPI.setCredentials({
-          clientId: userCredentials.client_id,
-          secretKey: userCredentials.secret_key,
-          retailer: userCredentials.shop_name
-        });
-
-        // Check if needs initial sync
-        const needsSync = await dataSyncService.needsInitialSync();
-        
-        if (needsSync) {
-          console.log('🚀 First time user - performing initial sync...');
-          setSyncStatus('syncing');
-          setShowProgressModal(true);
+        // If we have credentials, try to use them for live data
+        try {
+          console.log('🔄 Attempting to load live data from KiotViet API...');
           
-          // Show demo data while syncing in background
-          setData(generateDemoData(timeRange));
-          setLoading(false);
-          setIsInitialLoad(false);
-          
-          // Set up progress callback
-          dataSyncService.setProgressCallback((progress) => {
-            setSyncProgress(progress);
+          // Initialize KiotViet API with user credentials
+          const { kiotVietAPI } = await import('@/lib/kiotviet-api');
+          kiotVietAPI.setCredentials({
+            clientId: userCredentials.client_id,
+            secretKey: userCredentials.secret_key,
+            retailer: userCredentials.shop_name
           });
-          
-          // Perform initial sync with progress tracking
-          try {
-            const syncResult = await dataSyncService.performInitialSync();
-            if (syncResult.success) {
-              console.log('✅ Initial sync complete - reloading data');
-              setSyncStatus('complete');
+
+          // Initialize user and check for cached data
+          const userId = await dataSyncService.initializeUser();
+          if (userId) {
+            const needsSync = await dataSyncService.needsInitialSync();
+            
+            if (needsSync) {
+              console.log('🚀 First time user - performing initial sync...');
+              setSyncStatus('syncing');
+              setShowProgressModal(true);
               
-              // Load cached data after sync
+              // Show demo data while syncing in background
+              setData(generateDemoData(timeRange));
+              setLoading(false);
+              setIsInitialLoad(false);
+              
+              // Set up progress callback and perform sync
+              dataSyncService.setProgressCallback((progress) => {
+                setSyncProgress(progress);
+              });
+              
+              const syncResult = await dataSyncService.performInitialSync();
+              if (syncResult.success) {
+                console.log('✅ Initial sync complete');
+                setSyncStatus('complete');
+                
+                // Load real data after sync
+                const cachedData = await dataSyncService.getCachedData(timeRange);
+                if (cachedData) {
+                  const processedData = processCachedDataToDashboard(cachedData, timeRange);
+                  setData(processedData);
+                }
+                
+                // Hide progress modal
+                setTimeout(() => {
+                  setShowProgressModal(false);
+                  setSyncProgress(null);
+                  dataSyncService.setProgressCallback(null);
+                }, 2000);
+              } else {
+                throw new Error(`Sync failed: ${syncResult.error}`);
+              }
+            } else {
+              console.log('⚡ Loading cached data...');
+              
+              // Load cached data instantly
               const cachedData = await dataSyncService.getCachedData(timeRange);
               if (cachedData) {
                 const processedData = processCachedDataToDashboard(cachedData, timeRange);
                 setData(processedData);
-              }
-              
-              // Hide progress modal after delay
-              setTimeout(() => {
-                setShowProgressModal(false);
-                setSyncProgress(null);
-                dataSyncService.setProgressCallback(null);
-              }, 2000);
-            } else {
-              console.error('❌ Initial sync failed:', syncResult.error);
-              setSyncStatus('error');
-              setError(`Sync failed: ${syncResult.error}`);
-              setShowProgressModal(false);
-              dataSyncService.setProgressCallback(null);
-            }
-          } catch (syncError) {
-            console.error('❌ Sync error:', syncError);
-            setSyncStatus('error');
-            setError('Failed to sync data');
-            setShowProgressModal(false);
-            dataSyncService.setProgressCallback(null);
-          }
-          
-        } else {
-          console.log('⚡ Loading cached data...');
-          
-          // Load cached data instantly
-          const cachedData = await dataSyncService.getCachedData(timeRange);
-          if (cachedData) {
-            const processedData = processCachedDataToDashboard(cachedData, timeRange);
-            setData(processedData);
-            setLoading(false);
-            setIsInitialLoad(false);
-            
-            // Trigger incremental sync in background
-            setSyncStatus('syncing');
-            try {
-              const syncResult = await dataSyncService.performIncrementalSync();
-              if (syncResult.success) {
-                setSyncStatus('complete');
-                console.log('🔄 Background sync complete');
+                setLoading(false);
+                setIsInitialLoad(false);
                 
-                // Refresh data if significant changes
-                if (syncResult.itemsAdded > 0 || syncResult.itemsUpdated > 10) {
-                  console.log('📊 Refreshing data due to significant changes');
-                  const refreshedData = await dataSyncService.getCachedData(timeRange);
-                  if (refreshedData) {
-                    const processedData = processCachedDataToDashboard(refreshedData, timeRange);
-                    setData(processedData);
-                  }
+                // Trigger incremental sync in background
+                setSyncStatus('syncing');
+                const syncResult = await dataSyncService.performIncrementalSync();
+                if (syncResult.success) {
+                  setSyncStatus('complete');
+                  console.log('🔄 Background sync complete');
+                } else {
+                  setSyncStatus('error');
+                  console.warn('⚠️ Background sync failed:', syncResult.error);
                 }
               } else {
-                setSyncStatus('error');
-                console.warn('⚠️ Background sync failed:', syncResult.error);
+                throw new Error('No cached data available');
               }
-            } catch (syncError) {
-              setSyncStatus('error');
-              console.warn('⚠️ Background sync error:', syncError);
             }
           } else {
-            // No cached data, fallback to demo
-            console.log('📊 No cached data found - showing demo');
-            setData(generateDemoData(timeRange));
-            setLoading(false);
+            throw new Error('Failed to initialize user');
           }
+          
+        } catch (liveDataError) {
+          console.warn('⚠️ Live data loading failed, falling back to demo:', liveDataError);
+          setError('Failed to load live data, showing demo instead');
+          setData(generateDemoData(timeRange));
+          setLoading(false);
+          setSyncStatus('error');
         }
 
       } catch (err) {
@@ -470,7 +457,5 @@ function generateTimeSeriesFromCached(invoices: any[], orders: any[], timeRange:
 
 // Fallback to demo data (reuse existing function)
 function generateDemoData(timeRange: TimeRange): DashboardData {
-  // Import and use the existing demo data generation logic
-  const { generateDemoData: originalGenerateDemoData } = require('./use-kiotviet-data');
   return originalGenerateDemoData(timeRange);
 }

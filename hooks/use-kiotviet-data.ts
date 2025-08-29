@@ -355,7 +355,7 @@ export function useKiotVietData(
   return { data, loading, error, hasCredentials };
 }
 
-function generateDemoData(timeRange: TimeRange): DashboardData {
+export function generateDemoData(timeRange: TimeRange): DashboardData {
   // Generate continuous data based on time range like finance charts
   const generateContinuousData = () => {
     switch (timeRange) {
