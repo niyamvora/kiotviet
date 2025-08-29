@@ -6,7 +6,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { TimeFilter } from "@/lib/data/chart-data-processor";
+import type { TimeFilter } from "@/lib/data/chart-data-processor";
 
 interface TimeFilterProps {
   selectedFilter: TimeFilter;
