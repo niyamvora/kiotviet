@@ -312,11 +312,11 @@ async function processComprehensiveData(data: {
     orders.data.length > 0 ? totalRevenue / orders.data.length : 0;
 
   // Analyze categories
-  const categories = [
-    ...new Set(
+  const categories = Array.from(
+    new Set(
       products.data.map((p) => p.categoryName || "Others").filter(Boolean)
-    ),
-  ];
+    )
+  );
 
   // Analyze customer segments (basic segmentation)
   const customerSegments: { [key: string]: number } = {};
