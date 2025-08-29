@@ -1,6 +1,6 @@
 /**
- * Supabase client configuration for client-side usage
- * Handles authentication and database operations for the KiotViet Dashboard
+ * Simple Supabase client configuration
+ * Clean and straightforward setup that just works
  */
 
 import { createClient } from "@supabase/supabase-js";

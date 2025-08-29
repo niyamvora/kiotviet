@@ -1,42 +1,52 @@
 /**
- * Dashboard layout with sidebar navigation and header
- * Provides consistent layout for all dashboard pages in the KiotViet Dashboard
+ * Dashboard layout with collapsible sidebar and authentication protection
+ * Clean and responsive layout with sidebar toggle functionality
  */
 
-import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+'use client'
+
+import { useState } from 'react'
+import { AuthGuard } from "@/components/auth-guard";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { AIPanel } from "@/components/dashboard/ai-panel";
+import { SidebarToggle } from "@/components/dashboard/sidebar-toggle";
+import { cn } from '@/lib/utils'
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login");
-  }
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex">
-        <DashboardSidebar />
+    <AuthGuard>
+      <div className="min-h-screen bg-background">
+        <SidebarToggle 
+          isCollapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+        
+        <div className="flex">
+          <DashboardSidebar isCollapsed={sidebarCollapsed} />
 
-        <div className="flex-1 flex flex-col">
-          <DashboardHeader user={user} />
+          <div className={cn(
+            "flex-1 flex flex-col transition-all duration-300"
+          )}>
+            <DashboardHeader />
 
-          <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+            <main className={cn(
+              "flex-1 p-6 overflow-y-auto transition-all duration-300",
+              sidebarCollapsed ? "ml-16" : "ml-0"
+            )}>
+              {children}
+            </main>
+          </div>
+
+          <AIPanel />
         </div>
-
-        <AIPanel />
       </div>
-    </div>
+    </AuthGuard>
   );
 }

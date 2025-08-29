@@ -14,9 +14,12 @@ export function formatCurrency(
   amount: number,
   locale: string = "vi-VN"
 ): string {
-  return new Intl.NumberFormat(locale, {
+  if (locale === "vi-VN") {
+    return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
+  }
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: locale === "vi-VN" ? "VND" : "USD",
+    currency: "USD",
   }).format(amount);
 }
 

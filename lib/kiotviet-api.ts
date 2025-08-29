@@ -61,6 +61,10 @@ class KiotVietAPI {
     const data = await response.json();
     this.accessToken = data.access_token;
 
+    if (!this.accessToken) {
+      throw new Error("No access token received from KiotViet API");
+    }
+
     return this.accessToken;
   }
 

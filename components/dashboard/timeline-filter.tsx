@@ -5,7 +5,6 @@
 
 "use client";
 
-import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -23,14 +22,18 @@ const timelineOptions = [
   { value: "all", label: "time.all" },
 ];
 
-export function TimelineFilter() {
-  const [selectedTimeline, setSelectedTimeline] = useState("month");
+interface TimelineFilterProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export function TimelineFilter({ value, onChange }: TimelineFilterProps) {
   const { t } = useLanguage();
 
   return (
     <div className="flex items-center gap-2">
       <Calendar className="h-4 w-4 text-muted-foreground" />
-      <Select value={selectedTimeline} onValueChange={setSelectedTimeline}>
+      <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="w-[140px]">
           <SelectValue />
         </SelectTrigger>

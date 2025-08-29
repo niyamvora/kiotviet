@@ -5,7 +5,6 @@
 
 "use client";
 
-import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from "@/components/providers/language-provider";
 import {
@@ -24,16 +23,16 @@ const filterOptions = [
   { value: "orders", label: "nav.orders", icon: ShoppingCart },
 ];
 
-export function FilterTabs() {
-  const [activeFilter, setActiveFilter] = useState("overview");
+interface FilterTabsProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export function FilterTabs({ value, onChange }: FilterTabsProps) {
   const { t } = useLanguage();
 
   return (
-    <Tabs
-      value={activeFilter}
-      onValueChange={setActiveFilter}
-      className="w-full"
-    >
+    <Tabs value={value} onValueChange={onChange} className="w-full">
       <TabsList className="grid w-full grid-cols-5">
         {filterOptions.map((option) => {
           const Icon = option.icon;

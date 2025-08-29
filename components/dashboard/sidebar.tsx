@@ -31,13 +31,20 @@ const navigation = [
   { name: "nav.settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-export function DashboardSidebar() {
+interface DashboardSidebarProps {
+  isCollapsed: boolean
+}
+
+export function DashboardSidebar({ isCollapsed }: DashboardSidebarProps) {
   const pathname = usePathname();
   const { t } = useLanguage();
 
   return (
-    <div className="hidden md:flex md:w-64 md:flex-col">
-      <div className="flex flex-col flex-grow pt-5 bg-card border-r overflow-y-auto">
+    <div className={cn(
+      "hidden md:flex md:flex-col transition-all duration-300 bg-card border-r",
+      isCollapsed ? "md:w-0 md:opacity-0" : "md:w-64 md:opacity-100"
+    )}>
+      <div className="flex flex-col flex-grow pt-5 overflow-y-auto">
         <div className="flex items-center flex-shrink-0 px-4">
           <Store className="h-8 w-8 text-primary" />
           <span className="ml-2 text-xl font-bold text-foreground">
