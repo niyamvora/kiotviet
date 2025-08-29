@@ -51,8 +51,8 @@ export function AIPanel() {
   };
 
   return (
-    <div className="hidden lg:flex lg:w-80 lg:flex-col bg-card border-l">
-      <div className="p-4 border-b">
+    <div className="hidden lg:flex lg:w-80 lg:flex-col bg-card border-l h-screen">
+      <div className="p-4 border-b flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary/10">
             <Bot className="h-5 w-5 text-primary" />
@@ -66,30 +66,32 @@ export function AIPanel() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {mockConversation.map((item, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                item.type === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="p-4 space-y-4">
+            {mockConversation.map((item, index) => (
               <div
-                className={`max-w-[280px] rounded-lg p-3 ${
-                  item.type === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                key={index}
+                className={`flex ${
+                  item.type === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <p className="text-sm whitespace-pre-line">{item.message}</p>
+                <div
+                  className={`max-w-[280px] rounded-lg p-3 ${
+                    item.type === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-line">{item.message}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t flex-shrink-0">
         <div className="flex gap-2">
           <Input
             placeholder="Ask about your business..."

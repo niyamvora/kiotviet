@@ -11,6 +11,27 @@ import { DashboardCharts } from "@/components/dashboard/charts";
 import { FilterTabs } from "@/components/dashboard/filter-tabs";
 import { TimelineFilter } from "@/components/dashboard/timeline-filter";
 import { DashboardSkeleton } from "@/components/dashboard/skeleton";
+
+// Add skeleton components
+function DashboardOverviewSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-24 bg-muted rounded-lg animate-pulse" />
+      ))}
+    </div>
+  )
+}
+
+function DashboardChartsSkeleton() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      <div className="md:col-span-2 h-[300px] bg-muted rounded-lg animate-pulse" />
+      <div className="h-[250px] bg-muted rounded-lg animate-pulse" />
+      <div className="h-[250px] bg-muted rounded-lg animate-pulse" />
+    </div>
+  )
+}
 import { useDashboardFilters } from "@/hooks/use-dashboard-filters";
 import { useKiotVietData } from "@/hooks/use-kiotviet-data";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -31,38 +52,50 @@ export default function DashboardPage() {
   const { t } = useLanguage();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("nav.dashboard")}
-          </h1>
-          <p className="text-muted-foreground">
-            Welcome to your business analytics center
-          </p>
+    <div className="h-full flex flex-col">
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 space-y-6 pb-6 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {t("nav.dashboard")}
+            </h1>
+            <p className="text-muted-foreground">
+              Welcome to your business analytics center
+            </p>
+          </div>
+          <TimelineFilter value={timeRange} onChange={setTimeRange} />
         </div>
-        <TimelineFilter value={timeRange} onChange={setTimeRange} />
-      </div>
 
-      <FilterTabs value={activeDataType} onChange={setActiveDataType} />
+        <FilterTabs value={activeDataType} onChange={setActiveDataType} />
 
-      <Suspense fallback={<DashboardSkeleton />}>
-        <div className="grid gap-6">
+        {/* Fixed Overview Panel */}
+        <Suspense fallback={<DashboardOverviewSkeleton />}>
           {loading ? (
-            <DashboardSkeleton />
+            <DashboardOverviewSkeleton />
           ) : error ? (
-            <div className="text-center py-8">
-              <p className="text-destructive">Error loading data: {error}</p>
-              <p className="text-muted-foreground mt-2">
+            <div className="text-center py-4">
+              <p className="text-destructive text-sm">Error loading data: {error}</p>
+              <p className="text-muted-foreground text-xs mt-1">
                 Showing demo data instead
               </p>
             </div>
-          ) : null}
+          ) : (
+            <DashboardOverview data={data} dataType={activeDataType} />
+          )}
+        </Suspense>
+      </div>
 
-          <DashboardOverview data={data} dataType={activeDataType} />
-          <DashboardCharts data={data} dataType={activeDataType} />
-        </div>
-      </Suspense>
+      {/* Scrollable Charts Section */}
+      <div className="flex-1 overflow-y-auto pt-6">
+        <Suspense fallback={<DashboardChartsSkeleton />}>
+          {loading ? (
+            <DashboardChartsSkeleton />
+          ) : (
+            <DashboardCharts data={data} dataType={activeDataType} />
+          )}
+        </Suspense>
+      </div>
     </div>
   );
 }

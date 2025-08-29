@@ -32,7 +32,7 @@ const navigation = [
 ];
 
 interface DashboardSidebarProps {
-  isCollapsed: boolean
+  isCollapsed: boolean;
 }
 
 export function DashboardSidebar({ isCollapsed }: DashboardSidebarProps) {
@@ -40,10 +40,12 @@ export function DashboardSidebar({ isCollapsed }: DashboardSidebarProps) {
   const { t } = useLanguage();
 
   return (
-    <div className={cn(
-      "hidden md:flex md:flex-col transition-all duration-300 bg-card border-r",
-      isCollapsed ? "md:w-0 md:opacity-0" : "md:w-64 md:opacity-100"
-    )}>
+    <div
+      className={cn(
+        "hidden md:flex md:flex-col transition-all duration-300 bg-card border-r",
+        isCollapsed ? "md:w-0 md:opacity-0" : "md:w-64 md:opacity-100"
+      )}
+    >
       <div className="flex flex-col flex-grow pt-5 overflow-y-auto">
         <div className="flex items-center flex-shrink-0 px-4">
           <Store className="h-8 w-8 text-primary" />
