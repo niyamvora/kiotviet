@@ -10,6 +10,102 @@ import { kiotVietAPI } from "@/lib/kiotviet-api";
 import { supabase } from "@/lib/supabase";
 import { DataType, TimeRange } from "./use-dashboard-filters";
 
+/**
+ * Enhanced data fetching function that handles KiotViet's 20-item pagination limit
+ */
+async function fetchEnhancedData(
+  endpoint: "products" | "customers" | "orders" | "invoices",
+  maxItems: number,
+  fromDate?: string,
+  toDate?: string
+): Promise<{ data: any[]; total: number }> {
+  const KIOTVIET_PAGE_SIZE = 20; // KiotViet API hard limit
+  const MAX_REQUESTS = Math.min(Math.ceil(maxItems / KIOTVIET_PAGE_SIZE), 25); // Safety limit
+
+  let allData: any[] = [];
+  let skip = 0;
+  let requestCount = 0;
+  let apiReportedTotal = 0;
+
+  console.log(
+    `🚀 Enhanced fetching ${endpoint}: targeting ${maxItems} items (up to ${MAX_REQUESTS} requests)`
+  );
+
+  while (requestCount < MAX_REQUESTS && allData.length < maxItems) {
+    try {
+      let batch;
+      switch (endpoint) {
+        case "products":
+          batch = await kiotVietAPI.getProducts(skip, 20);
+          break;
+        case "customers":
+          batch = await kiotVietAPI.getCustomers(skip, 20);
+          break;
+        case "orders":
+          batch = await kiotVietAPI.getOrders(skip, 20, fromDate, toDate);
+          break;
+        case "invoices":
+          batch = await kiotVietAPI.getInvoices(skip, 20, fromDate, toDate);
+          break;
+      }
+
+      requestCount++;
+
+      if (batch && batch.data && batch.data.length > 0) {
+        allData = [...allData, ...batch.data];
+        skip += KIOTVIET_PAGE_SIZE;
+
+        if (requestCount === 1 && batch.total) {
+          apiReportedTotal = batch.total;
+        }
+
+        console.log(
+          `  📦 ${endpoint} batch ${requestCount}: +${
+            batch.data.length
+          } items (total: ${allData.length}/${apiReportedTotal || "unknown"})`
+        );
+
+        // Stop if we got fewer items than expected (end of data)
+        if (batch.data.length < KIOTVIET_PAGE_SIZE) {
+          console.log(`  🎯 ${endpoint}: reached end of data`);
+          break;
+        }
+
+        // Add progressive delay to avoid rate limiting
+        const delay = Math.min(150 + requestCount * 75, 800);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        console.log(`  🛑 ${endpoint}: no data received`);
+        break;
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error(
+        `  ❌ ${endpoint} batch ${requestCount + 1} failed:`,
+        errorMessage
+      );
+
+      // Handle rate limiting
+      if (errorMessage.includes("429") || errorMessage.includes("rate")) {
+        console.log(`  ⏳ ${endpoint}: rate limited, waiting 2 seconds...`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } else {
+        break;
+      }
+    }
+  }
+
+  console.log(
+    `✅ ${endpoint}: fetched ${allData.length} items in ${requestCount} requests`
+  );
+
+  return {
+    data: allData,
+    total: apiReportedTotal || allData.length,
+  };
+}
+
 interface DashboardData {
   overview: {
     totalRevenue: number;
@@ -148,40 +244,60 @@ export function useKiotVietData(
         let toDate = now.toISOString();
 
         switch (timeRange) {
-          case 'week':
-            fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          case "week":
+            fromDate = new Date(
+              now.getTime() - 7 * 24 * 60 * 60 * 1000
+            ).toISOString();
             break;
-          case 'month':
-            fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          case "month":
+            fromDate = new Date(
+              now.getTime() - 30 * 24 * 60 * 60 * 1000
+            ).toISOString();
             break;
-          case 'year':
-            fromDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString();
+          case "year":
+            fromDate = new Date(
+              now.getTime() - 365 * 24 * 60 * 60 * 1000
+            ).toISOString();
             break;
-          case 'all':
+          case "all":
             // Don't set fromDate for all-time data
             fromDate = undefined;
             break;
         }
 
-        console.log(`📅 Fetching data from ${fromDate || 'beginning'} to ${toDate}`);
+        console.log(
+          `📅 Fetching data from ${fromDate || "beginning"} to ${toDate}`
+        );
 
-        // Fetch live data from KiotViet API with date filtering
+        // Use enhanced data fetching to get more than 20 items per endpoint
+        console.log("🚀 Using enhanced data fetching system...");
+
         const [products, customers, orders, invoices] = await Promise.all([
-          kiotVietAPI.getProducts(0, 1000).catch((err) => {
-            console.warn("❌ Products API failed:", err.message || err);
-            return { data: [] };
+          // Enhanced fetching with proper pagination
+          fetchEnhancedData("products", 200).catch((err) => {
+            console.warn(
+              "❌ Enhanced Products API failed:",
+              err.message || err
+            );
+            return { data: [], total: 0 };
           }),
-          kiotVietAPI.getCustomers(0, 1000).catch((err) => {
-            console.warn("❌ Customers API failed:", err.message || err);
-            return { data: [] };
+          fetchEnhancedData("customers", 100).catch((err) => {
+            console.warn(
+              "❌ Enhanced Customers API failed:",
+              err.message || err
+            );
+            return { data: [], total: 0 };
           }),
-          kiotVietAPI.getOrders(0, 2000, fromDate, toDate).catch((err) => {
-            console.warn("❌ Orders API failed:", err.message || err);
-            return { data: [] };
+          fetchEnhancedData("orders", 400, fromDate, toDate).catch((err) => {
+            console.warn("❌ Enhanced Orders API failed:", err.message || err);
+            return { data: [], total: 0 };
           }),
-          kiotVietAPI.getInvoices(0, 2000, fromDate, toDate).catch((err) => {
-            console.warn("❌ Invoices API failed:", err.message || err);
-            return { data: [] };
+          fetchEnhancedData("invoices", 400, fromDate, toDate).catch((err) => {
+            console.warn(
+              "❌ Enhanced Invoices API failed:",
+              err.message || err
+            );
+            return { data: [], total: 0 };
           }),
         ]);
 

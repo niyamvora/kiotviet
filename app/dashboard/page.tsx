@@ -7,7 +7,7 @@
 
 import { Suspense } from "react";
 import { DashboardOverview } from "@/components/dashboard/overview";
-import { DashboardCharts } from "@/components/dashboard/charts";
+import { DashboardCharts } from "@/components/dashboard/charts/dashboard-charts";
 import { FilterTabs } from "@/components/dashboard/filter-tabs";
 import { TimelineFilter } from "@/components/dashboard/timeline-filter";
 import { DashboardSkeleton } from "@/components/dashboard/skeleton";
@@ -65,11 +65,19 @@ export default function DashboardPage() {
                 Welcome to your business analytics center
               </p>
             </div>
-            <TimelineFilter value={timeRange} onChange={setTimeRange} />
+            <TimelineFilter
+              value={timeRange}
+              onChange={(value) => setTimeRange(value as typeof timeRange)}
+            />
           </div>
 
           {/* Filter Tabs */}
-          <FilterTabs value={activeDataType} onChange={setActiveDataType} />
+          <FilterTabs
+            value={activeDataType}
+            onChange={(value) =>
+              setActiveDataType(value as typeof activeDataType)
+            }
+          />
 
           {/* Overview Cards */}
           <Suspense fallback={<DashboardOverviewSkeleton />}>
@@ -94,7 +102,11 @@ export default function DashboardPage() {
             {loading ? (
               <DashboardChartsSkeleton />
             ) : (
-              <DashboardCharts data={data} dataType={activeDataType} />
+              <DashboardCharts
+                dataType={activeDataType}
+                timeRange={timeRange}
+                dateRange={dateRange}
+              />
             )}
           </Suspense>
         </div>
