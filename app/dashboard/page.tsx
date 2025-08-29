@@ -10,7 +10,10 @@ import { DashboardOverview } from "@/components/dashboard/overview";
 import { DashboardCharts } from "@/components/dashboard/charts/dashboard-charts";
 import { FilterTabs } from "@/components/dashboard/filter-tabs";
 import { TimelineFilter } from "@/components/dashboard/timeline-filter";
-import { DashboardSkeleton } from "@/components/dashboard/skeleton";
+import { SyncStatus } from "@/components/dashboard/sync-status";
+import { useDashboardFilters } from "@/hooks/use-dashboard-filters";
+import { useCachedKiotVietData } from "@/hooks/use-cached-kiotviet-data";
+import { useLanguage } from "@/components/providers/language-provider";
 
 // Add skeleton components
 function DashboardOverviewSkeleton() {
@@ -32,9 +35,6 @@ function DashboardChartsSkeleton() {
     </div>
   );
 }
-import { useDashboardFilters } from "@/hooks/use-dashboard-filters";
-import { useKiotVietData } from "@/hooks/use-kiotviet-data";
-import { useLanguage } from "@/components/providers/language-provider";
 
 export default function DashboardPage() {
   const {
@@ -44,11 +44,8 @@ export default function DashboardPage() {
     setTimeRange,
     dateRange,
   } = useDashboardFilters();
-  const { data, loading, error, hasCredentials } = useKiotVietData(
-    activeDataType,
-    timeRange,
-    dateRange
-  );
+  const { data, loading, error, hasCredentials, syncStatus, isInitialLoad } =
+    useCachedKiotVietData(activeDataType, timeRange, dateRange);
   const { t } = useLanguage();
 
   return (
@@ -70,6 +67,13 @@ export default function DashboardPage() {
               onChange={(value) => setTimeRange(value as typeof timeRange)}
             />
           </div>
+
+          {/* Sync Status */}
+          <SyncStatus
+            syncStatus={syncStatus}
+            isInitialLoad={isInitialLoad}
+            hasCredentials={hasCredentials}
+          />
 
           {/* Filter Tabs */}
           <FilterTabs
