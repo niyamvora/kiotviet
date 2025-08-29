@@ -27,8 +27,27 @@ interface SyncResult {
   error?: string;
 }
 
+interface SyncProgress {
+  currentStep: 'products' | 'customers' | 'orders' | 'invoices' | 'complete';
+  totalSteps: number;
+  currentStepIndex: number;
+  currentStepProgress: number; // 0-100
+  overallProgress: number; // 0-100
+  itemsProcessed: number;
+  totalEstimatedItems: number;
+  currentStepItems: number;
+  stepEstimatedItems: number;
+  timeElapsed: number;
+  estimatedTimeRemaining: number;
+  message: string;
+}
+
+type SyncProgressCallback = (progress: SyncProgress) => void;
+
 class DataSyncService {
   private userId: string | null = null;
+  private progressCallback: SyncProgressCallback | null = null;
+  private syncStartTime: number = 0;
 
   async initializeUser() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -131,6 +150,39 @@ class DataSyncService {
     };
   }
 
+  // Set progress callback for UI updates
+  setProgressCallback(callback: SyncProgressCallback | null) {
+    this.progressCallback = callback;
+  }
+
+  // Update progress and notify UI
+  private updateProgress(progress: Partial<SyncProgress>) {
+    if (this.progressCallback) {
+      const timeElapsed = Date.now() - this.syncStartTime;
+      const estimatedTimeRemaining = progress.overallProgress 
+        ? Math.max(0, (timeElapsed / progress.overallProgress) * (100 - progress.overallProgress))
+        : 0;
+      
+      const fullProgress: SyncProgress = {
+        currentStep: 'products',
+        totalSteps: 4,
+        currentStepIndex: 0,
+        currentStepProgress: 0,
+        overallProgress: 0,
+        itemsProcessed: 0,
+        totalEstimatedItems: 1000,
+        currentStepItems: 0,
+        stepEstimatedItems: 250,
+        timeElapsed,
+        estimatedTimeRemaining,
+        message: 'Initializing sync...',
+        ...progress
+      };
+      
+      this.progressCallback(fullProgress);
+    }
+  }
+
   // Perform full initial sync (first time only)
   async performInitialSync(): Promise<SyncResult> {
     if (!this.userId) {
@@ -139,6 +191,15 @@ class DataSyncService {
 
     console.log('🚀 Starting initial full sync...');
     const startTime = Date.now();
+    this.syncStartTime = startTime;
+
+    // Initialize progress
+    this.updateProgress({
+      currentStep: 'products',
+      currentStepIndex: 0,
+      message: 'Preparing to sync your KiotViet data...',
+      overallProgress: 0
+    });
 
     try {
       // Check if sync already in progress
@@ -156,28 +217,62 @@ class DataSyncService {
       let totalProcessed = 0;
       let totalAdded = 0;
 
-      // Sync each data type
+      // Sync each data type with progress tracking
       const dataTypes = ['products', 'customers', 'orders', 'invoices'] as const;
+      const stepEstimates = { products: 300, customers: 150, orders: 400, invoices: 400 };
+      const totalEstimatedItems = Object.values(stepEstimates).reduce((a, b) => a + b, 0);
       
-      for (const dataType of dataTypes) {
+      for (let i = 0; i < dataTypes.length; i++) {
+        const dataType = dataTypes[i];
         console.log(`📊 Syncing ${dataType}...`);
+        
+        // Update progress for new step
+        this.updateProgress({
+          currentStep: dataType,
+          currentStepIndex: i,
+          stepEstimatedItems: stepEstimates[dataType],
+          totalEstimatedItems,
+          message: `Syncing ${dataType}... Please wait while we fetch your data from KiotViet.`,
+          overallProgress: (i / dataTypes.length) * 100
+        });
         
         // Mark sync as in progress
         await this.updateSyncStatus(dataType, { sync_in_progress: true });
 
-        const result = await this.syncDataType(dataType, true);
+        const result = await this.syncDataTypeWithProgress(dataType, true, stepEstimates[dataType]);
         totalProcessed += result.itemsProcessed;
         totalAdded += result.itemsAdded;
 
-        // Mark sync as complete
+        // Mark sync as complete for this step
         await this.updateSyncStatus(dataType, {
           sync_in_progress: false,
           last_successful_sync: new Date().toISOString(),
           total_items_synced: result.itemsProcessed
         });
+
+        // Update progress completion for this step
+        this.updateProgress({
+          currentStep: dataType,
+          currentStepIndex: i,
+          currentStepProgress: 100,
+          itemsProcessed: totalProcessed,
+          currentStepItems: result.itemsProcessed,
+          overallProgress: ((i + 1) / dataTypes.length) * 100,
+          message: `✅ ${dataType.charAt(0).toUpperCase() + dataType.slice(1)} synced successfully! (${result.itemsProcessed} items)`
+        });
       }
 
       const duration = Date.now() - startTime;
+      
+      // Final progress update
+      this.updateProgress({
+        currentStep: 'complete',
+        currentStepIndex: 4,
+        currentStepProgress: 100,
+        overallProgress: 100,
+        itemsProcessed: totalProcessed,
+        message: `🎉 Initial sync complete! Successfully synced ${totalProcessed} items from your KiotViet store.`
+      });
       
       console.log(`✅ Initial sync complete! ${totalProcessed} items in ${duration}ms`);
 
@@ -266,7 +361,131 @@ class DataSyncService {
     }
   }
 
-  // Sync specific data type
+  // Sync specific data type with progress tracking
+  private async syncDataTypeWithProgress(
+    dataType: 'products' | 'customers' | 'orders' | 'invoices', 
+    isFullSync: boolean,
+    estimatedItems: number
+  ): Promise<SyncResult> {
+    const startTime = Date.now();
+    let itemsProcessed = 0;
+    let itemsAdded = 0;
+    let itemsUpdated = 0;
+
+    try {
+      // Get last sync date for incremental sync
+      let lastSyncDate: string | undefined;
+      if (!isFullSync) {
+        const { data: syncStatus } = await supabase
+          .from('sync_status')
+          .select('last_successful_sync')
+          .eq('user_id', this.userId)
+          .eq('data_type', dataType)
+          .single();
+
+        lastSyncDate = syncStatus?.last_successful_sync;
+      }
+
+      // Fetch data from KiotViet API with progress updates
+      let apiData: any[] = [];
+      
+      if (dataType === 'products') {
+        const result = await this.fetchEnhancedDataWithProgress('products', estimatedItems, undefined, undefined, (current, total) => {
+          this.updateProgress({
+            currentStepProgress: (current / Math.max(total, estimatedItems)) * 100,
+            currentStepItems: current
+          });
+        });
+        apiData = result.data;
+      } else if (dataType === 'customers') {
+        const result = await this.fetchEnhancedDataWithProgress('customers', estimatedItems, undefined, undefined, (current, total) => {
+          this.updateProgress({
+            currentStepProgress: (current / Math.max(total, estimatedItems)) * 100,
+            currentStepItems: current
+          });
+        });
+        apiData = result.data;
+      } else if (dataType === 'orders') {
+        const fromDate = lastSyncDate || (isFullSync ? undefined : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        const result = await this.fetchEnhancedDataWithProgress('orders', estimatedItems, fromDate, undefined, (current, total) => {
+          this.updateProgress({
+            currentStepProgress: (current / Math.max(total, estimatedItems)) * 100,
+            currentStepItems: current
+          });
+        });
+        apiData = result.data;
+      } else if (dataType === 'invoices') {
+        const fromDate = lastSyncDate || (isFullSync ? undefined : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        const result = await this.fetchEnhancedDataWithProgress('invoices', estimatedItems, fromDate, undefined, (current, total) => {
+          this.updateProgress({
+            currentStepProgress: (current / Math.max(total, estimatedItems)) * 100,
+            currentStepItems: current
+          });
+        });
+        apiData = result.data;
+      }
+
+      itemsProcessed = apiData.length;
+
+      // Update progress for data processing
+      this.updateProgress({
+        message: `Processing ${dataType}... Saving ${itemsProcessed} items to database.`
+      });
+
+      // Process and save data to Supabase
+      for (let index = 0; index < apiData.length; index++) {
+        const item = apiData[index];
+        const transformedItem = this.transformApiData(dataType, item);
+        
+        const { data: existingItem } = await supabase
+          .from(`kiotviet_${dataType}`)
+          .select('id')
+          .eq('id', item.id)
+          .eq('user_id', this.userId)
+          .single();
+
+        if (existingItem) {
+          // Update existing item
+          await supabase
+            .from(`kiotviet_${dataType}`)
+            .update({ ...transformedItem, synced_at: new Date().toISOString() })
+            .eq('id', item.id)
+            .eq('user_id', this.userId);
+          itemsUpdated++;
+        } else {
+          // Insert new item
+          await supabase
+            .from(`kiotviet_${dataType}`)
+            .insert(transformedItem);
+          itemsAdded++;
+        }
+
+        // Update progress every 10 items
+        if (index % 10 === 0) {
+          const processingProgress = (index / apiData.length) * 20; // Processing is 20% of step
+          this.updateProgress({
+            currentStepProgress: 80 + processingProgress,
+            message: `Saving ${dataType}... ${index + 1}/${itemsProcessed} items processed.`
+          });
+        }
+      }
+
+      return {
+        success: true,
+        itemsProcessed,
+        itemsAdded,
+        itemsUpdated,
+        itemsDeleted: 0,
+        duration: Date.now() - startTime
+      };
+
+    } catch (error) {
+      console.error(`❌ Error syncing ${dataType}:`, error);
+      throw error;
+    }
+  }
+
+  // Legacy sync method (keep for incremental sync)
   private async syncDataType(dataType: 'products' | 'customers' | 'orders' | 'invoices', isFullSync: boolean): Promise<SyncResult> {
     const startTime = Date.now();
     let itemsProcessed = 0;
@@ -349,6 +568,66 @@ class DataSyncService {
       console.error(`❌ Error syncing ${dataType}:`, error);
       throw error;
     }
+  }
+
+  // Enhanced data fetching with progress callbacks
+  private async fetchEnhancedDataWithProgress(
+    endpoint: "products" | "customers" | "orders" | "invoices",
+    maxItems: number,
+    fromDate?: string,
+    toDate?: string,
+    onProgress?: (current: number, total: number) => void
+  ): Promise<{ data: any[]; total: number }> {
+    const KIOTVIET_PAGE_SIZE = 20;
+    const MAX_REQUESTS = Math.min(Math.ceil(maxItems / KIOTVIET_PAGE_SIZE), 25);
+
+    let allData: any[] = [];
+    let skip = 0;
+    let requestCount = 0;
+
+    while (requestCount < MAX_REQUESTS && allData.length < maxItems) {
+      try {
+        let batch;
+        switch (endpoint) {
+          case "products":
+            batch = await kiotVietAPI.getProducts(skip, 20);
+            break;
+          case "customers":
+            batch = await kiotVietAPI.getCustomers(skip, 20);
+            break;
+          case "orders":
+            batch = await kiotVietAPI.getOrders(skip, 20, fromDate, toDate);
+            break;
+          case "invoices":
+            batch = await kiotVietAPI.getInvoices(skip, 20, fromDate, toDate);
+            break;
+        }
+
+        requestCount++;
+
+        if (batch && batch.data && batch.data.length > 0) {
+          allData = [...allData, ...batch.data];
+          skip += KIOTVIET_PAGE_SIZE;
+
+          // Call progress callback
+          if (onProgress) {
+            onProgress(allData.length, maxItems);
+          }
+
+          if (batch.data.length < KIOTVIET_PAGE_SIZE) break;
+
+          const delay = Math.min(150 + requestCount * 75, 800);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        } else {
+          break;
+        }
+      } catch (error) {
+        console.error(`❌ Error fetching ${endpoint}:`, error);
+        break;
+      }
+    }
+
+    return { data: allData, total: allData.length };
   }
 
   // Enhanced data fetching with pagination (same as your existing implementation)

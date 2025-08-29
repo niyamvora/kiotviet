@@ -43,6 +43,21 @@ interface DashboardData {
   };
 }
 
+interface SyncProgress {
+  currentStep: 'products' | 'customers' | 'orders' | 'invoices' | 'complete';
+  totalSteps: number;
+  currentStepIndex: number;
+  currentStepProgress: number;
+  overallProgress: number;
+  itemsProcessed: number;
+  totalEstimatedItems: number;
+  currentStepItems: number;
+  stepEstimatedItems: number;
+  timeElapsed: number;
+  estimatedTimeRemaining: number;
+  message: string;
+}
+
 export function useCachedKiotVietData(
   dataType: DataType,
   timeRange: TimeRange,
@@ -54,6 +69,8 @@ export function useCachedKiotVietData(
   const [hasCredentials, setHasCredentials] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'complete' | 'error'>('idle');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -111,13 +128,19 @@ export function useCachedKiotVietData(
         if (needsSync) {
           console.log('🚀 First time user - performing initial sync...');
           setSyncStatus('syncing');
+          setShowProgressModal(true);
           
           // Show demo data while syncing in background
           setData(generateDemoData(timeRange));
           setLoading(false);
           setIsInitialLoad(false);
           
-          // Perform initial sync in background
+          // Set up progress callback
+          dataSyncService.setProgressCallback((progress) => {
+            setSyncProgress(progress);
+          });
+          
+          // Perform initial sync with progress tracking
           try {
             const syncResult = await dataSyncService.performInitialSync();
             if (syncResult.success) {
@@ -130,15 +153,26 @@ export function useCachedKiotVietData(
                 const processedData = processCachedDataToDashboard(cachedData, timeRange);
                 setData(processedData);
               }
+              
+              // Hide progress modal after delay
+              setTimeout(() => {
+                setShowProgressModal(false);
+                setSyncProgress(null);
+                dataSyncService.setProgressCallback(null);
+              }, 2000);
             } else {
               console.error('❌ Initial sync failed:', syncResult.error);
               setSyncStatus('error');
               setError(`Sync failed: ${syncResult.error}`);
+              setShowProgressModal(false);
+              dataSyncService.setProgressCallback(null);
             }
           } catch (syncError) {
             console.error('❌ Sync error:', syncError);
             setSyncStatus('error');
             setError('Failed to sync data');
+            setShowProgressModal(false);
+            dataSyncService.setProgressCallback(null);
           }
           
         } else {
@@ -203,7 +237,9 @@ export function useCachedKiotVietData(
     error, 
     hasCredentials, 
     syncStatus,
-    isInitialLoad
+    isInitialLoad,
+    syncProgress,
+    showProgressModal
   };
 }
 

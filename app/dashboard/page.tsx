@@ -11,6 +11,7 @@ import { DashboardCharts } from "@/components/dashboard/charts/dashboard-charts"
 import { FilterTabs } from "@/components/dashboard/filter-tabs";
 import { TimelineFilter } from "@/components/dashboard/timeline-filter";
 import { SyncStatus } from "@/components/dashboard/sync-status";
+import { SyncProgressModal } from "@/components/dashboard/sync-progress-modal";
 import { useDashboardFilters } from "@/hooks/use-dashboard-filters";
 import { useCachedKiotVietData } from "@/hooks/use-cached-kiotviet-data";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -44,12 +45,30 @@ export default function DashboardPage() {
     setTimeRange,
     dateRange,
   } = useDashboardFilters();
-  const { data, loading, error, hasCredentials, syncStatus, isInitialLoad } =
-    useCachedKiotVietData(activeDataType, timeRange, dateRange);
+  const {
+    data,
+    loading,
+    error,
+    hasCredentials,
+    syncStatus,
+    isInitialLoad,
+    syncProgress,
+    showProgressModal,
+  } = useCachedKiotVietData(activeDataType, timeRange, dateRange);
   const { t } = useLanguage();
 
   return (
     <div className="h-full">
+      {/* Progress Modal for Initial Sync */}
+      <SyncProgressModal
+        isVisible={showProgressModal}
+        progress={syncProgress}
+        onComplete={() => {
+          // Progress modal will handle hiding itself
+          console.log("🎉 Sync progress modal completed");
+        }}
+      />
+
       <div className="h-full overflow-y-auto">
         <div className="space-y-6">
           {/* Header */}
