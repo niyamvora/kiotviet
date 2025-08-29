@@ -52,45 +52,44 @@ export default function DashboardPage() {
   const { t } = useLanguage();
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Fixed Header Section */}
-      <div className="flex-shrink-0 space-y-6 pb-6 border-b bg-background/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {t("nav.dashboard")}
-            </h1>
-            <p className="text-muted-foreground">
-              Welcome to your business analytics center
-            </p>
-          </div>
-          <TimelineFilter value={timeRange} onChange={setTimeRange} />
-        </div>
-
-        <FilterTabs value={activeDataType} onChange={setActiveDataType} />
-
-        {/* Fixed Overview Panel */}
-        <Suspense fallback={<DashboardOverviewSkeleton />}>
-          {loading ? (
-            <DashboardOverviewSkeleton />
-          ) : error ? (
-            <div className="text-center py-4">
-              <p className="text-destructive text-sm">
-                Error loading data: {error}
-              </p>
-              <p className="text-muted-foreground text-xs mt-1">
-                Showing demo data instead
+    <div className="h-full">
+      <div className="h-full overflow-y-auto">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {t("nav.dashboard")}
+              </h1>
+              <p className="text-muted-foreground">
+                Welcome to your business analytics center
               </p>
             </div>
-          ) : (
-            <DashboardOverview data={data} dataType={activeDataType} />
-          )}
-        </Suspense>
-      </div>
+            <TimelineFilter value={timeRange} onChange={setTimeRange} />
+          </div>
 
-      {/* Scrollable Charts Section */}
-      <div className="flex-1 min-h-0 pt-6">
-        <div className="h-full overflow-y-auto">
+          {/* Filter Tabs */}
+          <FilterTabs value={activeDataType} onChange={setActiveDataType} />
+
+          {/* Overview Cards */}
+          <Suspense fallback={<DashboardOverviewSkeleton />}>
+            {loading ? (
+              <DashboardOverviewSkeleton />
+            ) : error ? (
+              <div className="text-center py-4">
+                <p className="text-destructive text-sm">
+                  Error loading data: {error}
+                </p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Showing demo data instead
+                </p>
+              </div>
+            ) : (
+              <DashboardOverview data={data} dataType={activeDataType} />
+            )}
+          </Suspense>
+
+          {/* Charts Section */}
           <Suspense fallback={<DashboardChartsSkeleton />}>
             {loading ? (
               <DashboardChartsSkeleton />

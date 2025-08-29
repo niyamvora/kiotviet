@@ -24,9 +24,7 @@ export default function DashboardLayout({
         <div className="flex-1 flex overflow-hidden">
           {/* Dashboard Content */}
           <main className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-6">
-              {children}
-            </div>
+            <div className="flex-1 overflow-y-auto p-6">{children}</div>
           </main>
 
           {/* AI Panel */}
