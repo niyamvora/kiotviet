@@ -142,21 +142,44 @@ export function useKiotVietData(
           retailer: userCredentials.shop_name,
         });
 
-        // Fetch live data from KiotViet API
+        // Calculate date range for API calls based on selected timeRange
+        const now = new Date();
+        let fromDate: string | undefined;
+        let toDate = now.toISOString();
+
+        switch (timeRange) {
+          case 'week':
+            fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case 'month':
+            fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case 'year':
+            fromDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString();
+            break;
+          case 'all':
+            // Don't set fromDate for all-time data
+            fromDate = undefined;
+            break;
+        }
+
+        console.log(`📅 Fetching data from ${fromDate || 'beginning'} to ${toDate}`);
+
+        // Fetch live data from KiotViet API with date filtering
         const [products, customers, orders, invoices] = await Promise.all([
-          kiotVietAPI.getProducts().catch((err) => {
+          kiotVietAPI.getProducts(0, 1000).catch((err) => {
             console.warn("❌ Products API failed:", err.message || err);
             return { data: [] };
           }),
-          kiotVietAPI.getCustomers().catch((err) => {
+          kiotVietAPI.getCustomers(0, 1000).catch((err) => {
             console.warn("❌ Customers API failed:", err.message || err);
             return { data: [] };
           }),
-          kiotVietAPI.getOrders().catch((err) => {
+          kiotVietAPI.getOrders(0, 2000, fromDate, toDate).catch((err) => {
             console.warn("❌ Orders API failed:", err.message || err);
             return { data: [] };
           }),
-          kiotVietAPI.getInvoices().catch((err) => {
+          kiotVietAPI.getInvoices(0, 2000, fromDate, toDate).catch((err) => {
             console.warn("❌ Invoices API failed:", err.message || err);
             return { data: [] };
           }),

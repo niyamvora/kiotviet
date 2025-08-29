@@ -40,13 +40,13 @@ class KiotVietAPI {
       throw new Error("KiotViet credentials not set");
     }
 
-    console.log('🔐 Authenticating via backend API...');
+    console.log("🔐 Authenticating via backend API...");
 
     // Use our backend API route instead of direct KiotViet call
-    const response = await fetch('/api/kiotviet/auth', {
-      method: 'POST',
+    const response = await fetch("/api/kiotviet/auth", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         clientId: this.credentials.clientId,
@@ -55,7 +55,9 @@ class KiotVietAPI {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Authentication failed' }));
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Authentication failed" }));
       throw new Error(`Authentication failed: ${errorData.error}`);
     }
 
@@ -66,11 +68,14 @@ class KiotVietAPI {
       throw new Error("No access token received");
     }
 
-    console.log('✅ Authentication successful');
+    console.log("✅ Authentication successful");
     return this.accessToken;
   }
 
-  private async apiRequest<T>(endpoint: string, params: any = {}): Promise<KiotVietResponse<T>> {
+  private async apiRequest<T>(
+    endpoint: string,
+    params: any = {}
+  ): Promise<KiotVietResponse<T>> {
     const token = await this.authenticate();
 
     if (!this.credentials?.retailer) {
@@ -81,9 +86,9 @@ class KiotVietAPI {
 
     // Use our backend API routes instead of direct KiotViet calls
     const response = await fetch(`/api/kiotviet/${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         accessToken: token,
@@ -93,7 +98,9 @@ class KiotVietAPI {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'API request failed' }));
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "API request failed" }));
       throw new Error(`${endpoint} API failed: ${errorData.error}`);
     }
 
@@ -103,59 +110,59 @@ class KiotVietAPI {
   }
 
   // Products API
-  async getProducts(skip: number = 0, take: number = 100) {
-    return this.apiRequest<any[]>('products', { skip, take });
+  async getProducts(skip: number = 0, take: number = 1000) {
+    return this.apiRequest<any[]>("products", { skip, take });
   }
 
   async getProductById(id: number) {
-    return this.apiRequest<any>('products', { id });
+    return this.apiRequest<any>("products", { id });
   }
 
   // Customers API
-  async getCustomers(skip: number = 0, take: number = 100) {
-    return this.apiRequest<any[]>('customers', { skip, take });
+  async getCustomers(skip: number = 0, take: number = 1000) {
+    return this.apiRequest<any[]>("customers", { skip, take });
   }
 
   async getCustomerById(id: number) {
-    return this.apiRequest<any>('customers', { id });
+    return this.apiRequest<any>("customers", { id });
   }
 
   // Orders API
   async getOrders(
     skip: number = 0,
-    take: number = 100,
+    take: number = 2000,
     fromDate?: string,
     toDate?: string
   ) {
-    return this.apiRequest<any[]>('orders', { skip, take, fromDate, toDate });
+    return this.apiRequest<any[]>("orders", { skip, take, fromDate, toDate });
   }
 
   async getOrderById(id: number) {
-    return this.apiRequest<any>('orders', { id });
+    return this.apiRequest<any>("orders", { id });
   }
 
   // Invoices API
   async getInvoices(
     skip: number = 0,
-    take: number = 100,
+    take: number = 2000,
     fromDate?: string,
     toDate?: string
   ) {
-    return this.apiRequest<any[]>('invoices', { skip, take, fromDate, toDate });
+    return this.apiRequest<any[]>("invoices", { skip, take, fromDate, toDate });
   }
 
   async getInvoiceById(id: number) {
-    return this.apiRequest<any>('invoices', { id });
+    return this.apiRequest<any>("invoices", { id });
   }
 
   // Categories API
   async getCategories() {
-    return this.apiRequest<any[]>('categories');
+    return this.apiRequest<any[]>("categories");
   }
 
-  // Branches API  
+  // Branches API
   async getBranches() {
-    return this.apiRequest<any[]>('branches');
+    return this.apiRequest<any[]>("branches");
   }
 
   // Analytics helpers

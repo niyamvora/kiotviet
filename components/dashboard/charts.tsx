@@ -77,6 +77,22 @@ const formatTooltipCurrency = (value: number, language: string) => {
   return `${value.toLocaleString("vi-VN")} VND`;
 };
 
+// Helper function to truncate long product names for better chart display
+const truncateProductName = (name: string, maxLength: number = 25) => {
+  if (!name) return "Unknown Product";
+  if (name.length <= maxLength) return name;
+
+  // Try to break at word boundaries
+  const truncated = name.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+
+  if (lastSpace > maxLength * 0.7) {
+    return truncated.substring(0, lastSpace) + "...";
+  }
+
+  return truncated + "...";
+};
+
 function OverviewCharts({ data, language }: { data: any; language: string }) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -242,37 +258,49 @@ function SalesCharts({ data, language }: { data: any; language: string }) {
         </CardContent>
       </Card>
 
-      {/* Top Products by Revenue */}
+      {/* Top Products by Revenue - Redesigned for better readability */}
       <Card>
         <CardHeader>
           <CardTitle>Top Products by Revenue</CardTitle>
           <CardDescription>Highest revenue generating products</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={400}>
             <BarChart
-              data={data.sales.topProducts}
-              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              data={data.sales.topProducts?.slice(0, 8).map((product: any) => ({
+                ...product,
+                displayName: truncateProductName(product.name, 20)
+              })) || []}
+              layout="horizontal"
+              margin={{ top: 20, right: 30, left: 120, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="name"
-                angle={-45}
-                textAnchor="end"
-                height={100}
-                interval={0}
-                fontSize={12}
-              />
-              <YAxis
+              <XAxis 
+                type="number"
                 tickFormatter={(value) => formatYAxisTick(value, language)}
                 width={80}
+              />
+              <YAxis 
+                type="category"
+                dataKey="displayName"
+                width={120}
+                fontSize={11}
+                interval={0}
               />
               <Tooltip
                 formatter={(value) => [
                   formatTooltipCurrency(value as number, language),
                   "Revenue",
                 ]}
-                labelStyle={{ fontSize: "12px" }}
+                labelFormatter={(label) => {
+                  // Find original product name for tooltip
+                  const product = data.sales.topProducts?.find((p: any) => 
+                    truncateProductName(p.name, 20) === label
+                  );
+                  return product?.name || label;
+                }}
+                labelStyle={{ fontSize: "11px", wordWrap: "break-word", maxWidth: "200px" }}
+                contentStyle={{ fontSize: "11px" }}
               />
               <Bar dataKey="revenue" fill="#00C49F" />
             </BarChart>
@@ -316,29 +344,43 @@ function SalesCharts({ data, language }: { data: any; language: string }) {
 function ProductsCharts({ data, language }: { data: any; language: string }) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {/* Top Selling Products */}
+      {/* Top Selling Products - Improved Design */}
       <Card className="md:col-span-2">
         <CardHeader>
-          <CardTitle>Product Performance</CardTitle>
-          <CardDescription>Top selling products by units sold</CardDescription>
+          <CardTitle>Top Products</CardTitle>
+          <CardDescription>Best performing products by sales volume</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={400}>
             <BarChart
-              data={data.products.topSellingProducts}
-              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              data={data.products.topSellingProducts?.slice(0, 10).map((product: any) => ({
+                ...product,
+                displayName: truncateProductName(product.name, 25)
+              })) || []}
+              layout="horizontal"
+              margin={{ top: 20, right: 30, left: 140, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="name"
-                angle={-45}
-                textAnchor="end"
-                height={100}
+              <XAxis type="number" width={60} />
+              <YAxis 
+                type="category"
+                dataKey="displayName"
+                width={140}
+                fontSize={10}
                 interval={0}
-                fontSize={12}
               />
-              <YAxis width={60} />
-              <Tooltip labelStyle={{ fontSize: "12px" }} />
+              <Tooltip 
+                formatter={(value, name) => [value, "Units Sold"]}
+                labelFormatter={(label) => {
+                  // Find original product name for tooltip
+                  const product = data.products.topSellingProducts?.find((p: any) => 
+                    truncateProductName(p.name, 25) === label
+                  );
+                  return product?.name || label;
+                }}
+                labelStyle={{ fontSize: "10px", wordWrap: "break-word", maxWidth: "250px" }}
+                contentStyle={{ fontSize: "10px" }}
+              />
               <Bar dataKey="sales" fill="#8884d8" name="Units Sold" />
             </BarChart>
           </ResponsiveContainer>
@@ -435,23 +477,40 @@ function CustomersCharts({ data, language }: { data: any; language: string }) {
         </CardContent>
       </Card>
 
-      {/* Geographic Distribution */}
+      {/* Geographic Distribution - Fixed */}
       <Card>
         <CardHeader>
           <CardTitle>Geographic Distribution</CardTitle>
-          <CardDescription>Customers by location</CardDescription>
+          <CardDescription>Customers and revenue by location</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
-              data={data.customers.geographicDistribution}
+              data={data.customers.geographicDistribution || []}
               layout="horizontal"
               margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" width={60} />
-              <YAxis dataKey="city" type="category" width={80} />
-              <Tooltip />
+              <XAxis 
+                type="number" 
+                width={60}
+                tickFormatter={(value) => formatYAxisTick(value, language)}
+              />
+              <YAxis 
+                dataKey="city" 
+                type="category" 
+                width={80}
+                fontSize={12}
+              />
+              <Tooltip 
+                formatter={(value, name) => {
+                  if (name === "revenue") {
+                    return [formatTooltipCurrency(value as number, language), "Revenue"];
+                  }
+                  return [value, name === "customers" ? "Customers" : name];
+                }}
+                contentStyle={{ fontSize: "12px" }}
+              />
               <Bar dataKey="customers" fill="#00C49F" name="Customers" />
             </BarChart>
           </ResponsiveContainer>

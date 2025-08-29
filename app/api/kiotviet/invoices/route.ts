@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       accessToken,
       retailer,
       skip = 0,
-      take = 100,
+      take = 2000, // Increase for invoices - critical for revenue analytics
       fromDate,
       toDate,
     } = await request.json();

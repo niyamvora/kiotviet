@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       accessToken,
       retailer,
       skip = 0,
-      take = 100,
+      take = 1000, // Increase to fetch more customers for better analytics
     } = await request.json();
 
     if (!accessToken || !retailer) {

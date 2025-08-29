@@ -3,22 +3,22 @@
  * Server-side proxy for KiotViet Orders API to avoid CORS
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      accessToken, 
-      retailer, 
-      skip = 0, 
-      take = 100,
+    const {
+      accessToken,
+      retailer,
+      skip = 0,
+      take = 2000, // Increase for orders - more data needed for time-based analytics
       fromDate,
-      toDate 
+      toDate,
     } = await request.json();
 
     if (!accessToken || !retailer) {
       return NextResponse.json(
-        { error: 'Missing accessToken or retailer' },
+        { error: "Missing accessToken or retailer" },
         { status: 400 }
       );
     }
@@ -27,20 +27,20 @@ export async function POST(request: NextRequest) {
     if (fromDate) url += `&fromDate=${fromDate}`;
     if (toDate) url += `&toDate=${toDate}`;
 
-    console.log('🛒 Fetching orders from KiotViet API...');
+    console.log("🛒 Fetching orders from KiotViet API...");
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Retailer': retailer,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${accessToken}`,
+        Retailer: retailer,
+        "Content-Type": "application/json",
+      },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Orders API failed:', response.status, errorText);
+      console.error("❌ Orders API failed:", response.status, errorText);
       return NextResponse.json(
         { error: `Orders API failed: ${response.status}` },
         { status: response.status }
@@ -48,14 +48,17 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ Orders fetched successfully:', data.data?.length || 0, 'items');
+    console.log(
+      "✅ Orders fetched successfully:",
+      data.data?.length || 0,
+      "items"
+    );
 
     return NextResponse.json(data);
-
   } catch (error) {
-    console.error('❌ Orders API error:', error);
+    console.error("❌ Orders API error:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch orders' },
+      { error: "Failed to fetch orders" },
       { status: 500 }
     );
   }
