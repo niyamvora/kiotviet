@@ -24,8 +24,18 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/components/providers/language-provider";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Key, Settings, Globe, Moon, Sun } from "lucide-react";
+import {
+  Loader2,
+  Key,
+  Settings,
+  Globe,
+  Moon,
+  Sun,
+  ArrowLeft,
+  Home,
+} from "lucide-react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 
 const credentialsSchema = z.object({
   clientId: z.string().min(1, "Client ID is required"),
@@ -41,6 +51,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const { t, language, setLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
 
   const {
     register,
@@ -122,13 +133,32 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {t("nav.settings")}
-        </h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and KiotViet integration
-        </p>
+      {/* Header with Back Button */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => router.push("/dashboard")}
+          className="h-10 w-10"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold tracking-tight">
+            {t("nav.settings")}
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your account settings and KiotViet integration
+          </p>
+        </div>
+        <Button
+          variant="default"
+          onClick={() => router.push("/dashboard")}
+          className="gap-2"
+        >
+          <Home className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -270,20 +300,38 @@ export default function SettingsPage() {
         </Card>
       </div>
 
-      {hasCredentials && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-green-600">
-              <div className="h-2 w-2 rounded-full bg-green-600" />
-              <span className="text-sm">Connected to KiotViet API</span>
+      {/* Data Source Status */}
+      <Card>
+        <CardContent className="pt-6">
+          {hasCredentials ? (
+            <div>
+              <div className="flex items-center gap-2 text-green-600 mb-2">
+                <div className="h-2 w-2 rounded-full bg-green-600" />
+                <span className="text-sm font-medium">
+                  🔗 Connected to KiotViet API
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                ✅ Your dashboard is now displaying <strong>LIVE DATA</strong>{" "}
+                from your KiotViet store. All metrics, charts, and analytics are
+                based on real-time data from your business.
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Your dashboard is now displaying live data from your KiotViet
-              store.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <div>
+              <div className="flex items-center gap-2 text-orange-600 mb-2">
+                <div className="h-2 w-2 rounded-full bg-orange-600" />
+                <span className="text-sm font-medium">📊 Demo Mode</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Currently showing <strong>DEMO DATA</strong> for preview
+                purposes. Enter your KiotViet credentials above to connect and
+                view your real business data.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

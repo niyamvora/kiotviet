@@ -72,11 +72,9 @@ const formatYAxisTick = (value: number, language: string) => {
   return value.toString();
 };
 
-// Helper function for currency tooltips
+// Helper function for currency tooltips - Always VND for Vietnam
 const formatTooltipCurrency = (value: number, language: string) => {
-  return language === 'vi-VN' 
-    ? `${value.toLocaleString('vi-VN')} VND`
-    : `$${value.toLocaleString('en-US')}`;
+  return `${value.toLocaleString("vi-VN")} VND`;
 };
 
 function OverviewCharts({ data, language }: { data: any; language: string }) {
@@ -86,25 +84,22 @@ function OverviewCharts({ data, language }: { data: any; language: string }) {
       <Card className="md:col-span-2">
         <CardHeader>
           <CardTitle>Revenue Trend</CardTitle>
-          <CardDescription>
-            Revenue and order count over time
-          </CardDescription>
+          <CardDescription>Revenue and order count over time</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={data.sales.revenueData} margin={{ top: 20, right: 30, left: 50, bottom: 20 }}>
+            <LineChart
+              data={data.sales.revenueData}
+              margin={{ top: 20, right: 30, left: 50, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis 
-                yAxisId="left" 
+              <YAxis
+                yAxisId="left"
                 tickFormatter={(value) => formatYAxisTick(value, language)}
                 width={80}
               />
-              <YAxis 
-                yAxisId="right" 
-                orientation="right"
-                width={60}
-              />
+              <YAxis yAxisId="right" orientation="right" width={60} />
               <Tooltip
                 formatter={(value, name) => [
                   name === "revenue"
@@ -141,7 +136,9 @@ function OverviewCharts({ data, language }: { data: any; language: string }) {
       <Card>
         <CardHeader>
           <CardTitle>Sales by Category</CardTitle>
-          <CardDescription>Revenue distribution across product categories</CardDescription>
+          <CardDescription>
+            Revenue distribution across product categories
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -178,11 +175,23 @@ function OverviewCharts({ data, language }: { data: any; language: string }) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.sales.topProducts} layout="horizontal" margin={{ top: 20, right: 30, left: 100, bottom: 20 }}>
+            <BarChart
+              data={data.sales.topProducts}
+              layout="horizontal"
+              margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" tickFormatter={(value) => formatYAxisTick(value, language)} />
+              <XAxis
+                type="number"
+                tickFormatter={(value) => formatYAxisTick(value, language)}
+              />
               <YAxis dataKey="name" type="category" width={100} />
-              <Tooltip formatter={(value) => [formatTooltipCurrency(value as number, language), "Revenue"]} />
+              <Tooltip
+                formatter={(value) => [
+                  formatTooltipCurrency(value as number, language),
+                  "Revenue",
+                ]}
+              />
               <Bar dataKey="revenue" fill="#8884d8" />
             </BarChart>
           </ResponsiveContainer>
@@ -199,16 +208,27 @@ function SalesCharts({ data, language }: { data: any; language: string }) {
       <Card className="md:col-span-2">
         <CardHeader>
           <CardTitle>Revenue Performance</CardTitle>
-          <CardDescription>Revenue trends over the selected period</CardDescription>
+          <CardDescription>
+            Revenue trends over the selected period
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
-            <AreaChart data={data.sales.revenueData} margin={{ top: 20, right: 30, left: 50, bottom: 20 }}>
+            <AreaChart
+              data={data.sales.revenueData}
+              margin={{ top: 20, right: 30, left: 50, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis tickFormatter={(value) => formatYAxisTick(value, language)} width={80} />
+              <YAxis
+                tickFormatter={(value) => formatYAxisTick(value, language)}
+                width={80}
+              />
               <Tooltip
-                formatter={(value) => [formatTooltipCurrency(value as number, language), "Revenue"]}
+                formatter={(value) => [
+                  formatTooltipCurrency(value as number, language),
+                  "Revenue",
+                ]}
               />
               <Area
                 type="monotone"
@@ -230,20 +250,29 @@ function SalesCharts({ data, language }: { data: any; language: string }) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.sales.topProducts} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+            <BarChart
+              data={data.sales.topProducts}
+              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="name" 
-                angle={-45} 
-                textAnchor="end" 
+              <XAxis
+                dataKey="name"
+                angle={-45}
+                textAnchor="end"
                 height={100}
                 interval={0}
                 fontSize={12}
               />
-              <YAxis tickFormatter={(value) => formatYAxisTick(value, language)} width={80} />
+              <YAxis
+                tickFormatter={(value) => formatYAxisTick(value, language)}
+                width={80}
+              />
               <Tooltip
-                formatter={(value) => [formatTooltipCurrency(value as number, language), "Revenue"]}
-                labelStyle={{ fontSize: '12px' }}
+                formatter={(value) => [
+                  formatTooltipCurrency(value as number, language),
+                  "Revenue",
+                ]}
+                labelStyle={{ fontSize: "12px" }}
               />
               <Bar dataKey="revenue" fill="#00C49F" />
             </BarChart>
@@ -295,18 +324,21 @@ function ProductsCharts({ data, language }: { data: any; language: string }) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={data.products.topSellingProducts} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+            <BarChart
+              data={data.products.topSellingProducts}
+              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="name" 
-                angle={-45} 
-                textAnchor="end" 
+              <XAxis
+                dataKey="name"
+                angle={-45}
+                textAnchor="end"
                 height={100}
                 interval={0}
                 fontSize={12}
               />
               <YAxis width={60} />
-              <Tooltip labelStyle={{ fontSize: '12px' }} />
+              <Tooltip labelStyle={{ fontSize: "12px" }} />
               <Bar dataKey="sales" fill="#8884d8" name="Units Sold" />
             </BarChart>
           </ResponsiveContainer>
@@ -321,7 +353,10 @@ function ProductsCharts({ data, language }: { data: any; language: string }) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.products.categoryPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+            <BarChart
+              data={data.products.categoryPerformance}
+              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis width={60} />
@@ -340,7 +375,10 @@ function ProductsCharts({ data, language }: { data: any; language: string }) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.products.priceAnalysis} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+            <BarChart
+              data={data.products.priceAnalysis}
+              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="range" />
               <YAxis width={60} />
@@ -367,7 +405,10 @@ function CustomersCharts({ data, language }: { data: any; language: string }) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
-            <AreaChart data={data.customers.customerGrowth} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+            <AreaChart
+              data={data.customers.customerGrowth}
+              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis width={60} />
@@ -455,15 +496,25 @@ function OrdersCharts({ data, language }: { data: any; language: string }) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={data.orders.orderTrends} margin={{ top: 20, right: 30, left: 50, bottom: 20 }}>
+            <LineChart
+              data={data.orders.orderTrends}
+              margin={{ top: 20, right: 30, left: 50, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis yAxisId="left" width={60} />
-              <YAxis yAxisId="right" orientation="right" tickFormatter={(value) => formatYAxisTick(value, language)} width={80} />
-              <Tooltip 
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tickFormatter={(value) => formatYAxisTick(value, language)}
+                width={80}
+              />
+              <Tooltip
                 formatter={(value, name) => [
-                  name === "revenue" ? formatTooltipCurrency(value as number, language) : value,
-                  name === "revenue" ? "Revenue" : "Orders"
+                  name === "revenue"
+                    ? formatTooltipCurrency(value as number, language)
+                    : value,
+                  name === "revenue" ? "Revenue" : "Orders",
                 ]}
               />
               <Line
@@ -494,12 +545,21 @@ function OrdersCharts({ data, language }: { data: any; language: string }) {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data.orders.averageOrderValue} margin={{ top: 20, right: 30, left: 80, bottom: 20 }}>
+            <AreaChart
+              data={data.orders.averageOrderValue}
+              margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis tickFormatter={(value) => formatYAxisTick(value, language)} width={80} />
+              <YAxis
+                tickFormatter={(value) => formatYAxisTick(value, language)}
+                width={80}
+              />
               <Tooltip
-                formatter={(value) => [formatTooltipCurrency(value as number, language), "AOV"]}
+                formatter={(value) => [
+                  formatTooltipCurrency(value as number, language),
+                  "AOV",
+                ]}
               />
               <Area
                 type="monotone"
@@ -517,11 +577,16 @@ function OrdersCharts({ data, language }: { data: any; language: string }) {
       <Card>
         <CardHeader>
           <CardTitle>Orders by Branch</CardTitle>
-          <CardDescription>Performance across different locations</CardDescription>
+          <CardDescription>
+            Performance across different locations
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.orders.ordersByBranch} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <BarChart
+              data={data.orders.ordersByBranch}
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="branch"

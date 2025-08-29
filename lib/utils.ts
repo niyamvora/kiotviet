@@ -14,34 +14,23 @@ export function formatCurrency(
   amount: number,
   locale: string = "vi-VN"
 ): string {
-  if (locale === "vi-VN") {
-    // Format large numbers with shorter notation for display
-    if (amount >= 1000000000) {
-      return (amount / 1000000000).toFixed(1) + "B VND";
-    } else if (amount >= 1000000) {
-      return (amount / 1000000).toFixed(1) + "M VND";
-    } else if (amount >= 1000) {
-      return (amount / 1000).toFixed(1) + "K VND";
-    }
-    return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
+  // Always format as VND since this is Vietnam-only app
+  if (amount >= 1000000000) {
+    return (amount / 1000000000).toFixed(1) + "B VND";
+  } else if (amount >= 1000000) {
+    return (amount / 1000000).toFixed(1) + "M VND";
+  } else if (amount >= 1000) {
+    return (amount / 1000).toFixed(1) + "K VND";
   }
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+  return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
 }
 
 export function formatCurrencyFull(
   amount: number,
   locale: string = "vi-VN"
 ): string {
-  if (locale === "vi-VN") {
-    return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
-  }
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+  // Always format as VND since this is Vietnam-only app
+  return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
 }
 
 export function formatNumber(num: number, locale: string = "vi-VN"): string {
