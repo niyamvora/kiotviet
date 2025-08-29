@@ -1,5 +1,6 @@
 -- KiotViet Dashboard Database Schema
 -- This script creates the necessary tables for the KiotViet Dashboard application
+-- Run this in Supabase SQL Editor
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -139,9 +140,6 @@ BEGIN
     DELETE FROM api_cache WHERE expires_at < NOW();
 END;
 $$ LANGUAGE plpgsql;
-
--- Create a scheduled job to clean up expired cache (if pg_cron is available)
--- SELECT cron.schedule('cleanup-cache', '0 0 * * *', 'SELECT cleanup_expired_cache();');
 
 -- Insert default preferences for existing users
 INSERT INTO user_preferences (user_id, theme, language)
