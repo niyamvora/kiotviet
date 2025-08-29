@@ -51,7 +51,7 @@ export function AIPanel() {
   };
 
   return (
-    <div className="hidden lg:flex lg:w-80 lg:flex-col bg-card border-l h-screen">
+    <div className="hidden lg:flex lg:w-80 lg:flex-col bg-card border-l h-full">
       <div className="p-4 border-b flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary/10">
@@ -66,7 +66,7 @@ export function AIPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <ScrollArea className="h-full">
           <div className="p-4 space-y-4">
             {mockConversation.map((item, index) => (

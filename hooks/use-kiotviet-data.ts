@@ -103,12 +103,12 @@ export function useKiotVietData(
         // This would normally check from Supabase
         setHasCredentials(true); // For now, assume they do
 
-                 if (!hasCredentials) {
-           // Return demo data
-           setData(generateDemoData(timeRange));
-           setLoading(false);
-           return;
-         }
+        if (!hasCredentials) {
+          // Return demo data
+          setData(generateDemoData(timeRange));
+          setLoading(false);
+          return;
+        }
 
         // Generate demo data for now - replace with real API calls
         const dashboardData = generateDemoData(timeRange);
@@ -123,10 +123,10 @@ export function useKiotVietData(
         setData(filteredData);
         setLoading(false);
       } catch (err) {
-                 setError(err instanceof Error ? err.message : "Unknown error");
-         // Fallback to demo data
-         setData(generateDemoData(timeRange));
-         setLoading(false);
+        setError(err instanceof Error ? err.message : "Unknown error");
+        // Fallback to demo data
+        setData(generateDemoData(timeRange));
+        setLoading(false);
       }
     };
 
@@ -407,11 +407,14 @@ function filterDataByTimeRange(
   timeRange: TimeRange
 ): DashboardData {
   // Adjust overview metrics based on time range
-  const timeMultiplier = 
-    timeRange === 'week' ? 0.15 : 
-    timeRange === 'month' ? 1 : 
-    timeRange === 'year' ? 12 : 
-    36; // all time (3 years)
+  const timeMultiplier =
+    timeRange === "week"
+      ? 0.15
+      : timeRange === "month"
+      ? 1
+      : timeRange === "year"
+      ? 12
+      : 36; // all time (3 years)
 
   const adjustedData = {
     ...data,
@@ -419,13 +422,17 @@ function filterDataByTimeRange(
       ...data.overview,
       totalRevenue: Math.floor(data.overview.totalRevenue * timeMultiplier),
       totalOrders: Math.floor(data.overview.totalOrders * timeMultiplier),
-      totalCustomers: timeRange === 'all' ? data.overview.totalCustomers : 
-                     timeRange === 'year' ? Math.floor(data.overview.totalCustomers * 0.3) :
-                     timeRange === 'month' ? Math.floor(data.overview.totalCustomers * 0.08) :
-                     Math.floor(data.overview.totalCustomers * 0.02),
+      totalCustomers:
+        timeRange === "all"
+          ? data.overview.totalCustomers
+          : timeRange === "year"
+          ? Math.floor(data.overview.totalCustomers * 0.3)
+          : timeRange === "month"
+          ? Math.floor(data.overview.totalCustomers * 0.08)
+          : Math.floor(data.overview.totalCustomers * 0.02),
       totalProducts: data.overview.totalProducts, // Products don't change with time
-    }
-  }
+    },
+  };
 
   return adjustedData;
 }

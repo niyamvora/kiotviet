@@ -20,7 +20,7 @@ function DashboardOverviewSkeleton() {
         <div key={i} className="h-24 bg-muted rounded-lg animate-pulse" />
       ))}
     </div>
-  )
+  );
 }
 
 function DashboardChartsSkeleton() {
@@ -30,7 +30,7 @@ function DashboardChartsSkeleton() {
       <div className="h-[250px] bg-muted rounded-lg animate-pulse" />
       <div className="h-[250px] bg-muted rounded-lg animate-pulse" />
     </div>
-  )
+  );
 }
 import { useDashboardFilters } from "@/hooks/use-dashboard-filters";
 import { useKiotVietData } from "@/hooks/use-kiotviet-data";
@@ -53,8 +53,8 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 space-y-6 pb-6 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+      {/* Fixed Header Section */}
+      <div className="flex-shrink-0 space-y-6 pb-6 border-b bg-background/95 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
@@ -75,7 +75,9 @@ export default function DashboardPage() {
             <DashboardOverviewSkeleton />
           ) : error ? (
             <div className="text-center py-4">
-              <p className="text-destructive text-sm">Error loading data: {error}</p>
+              <p className="text-destructive text-sm">
+                Error loading data: {error}
+              </p>
               <p className="text-muted-foreground text-xs mt-1">
                 Showing demo data instead
               </p>
@@ -87,14 +89,16 @@ export default function DashboardPage() {
       </div>
 
       {/* Scrollable Charts Section */}
-      <div className="flex-1 overflow-y-auto pt-6">
-        <Suspense fallback={<DashboardChartsSkeleton />}>
-          {loading ? (
-            <DashboardChartsSkeleton />
-          ) : (
-            <DashboardCharts data={data} dataType={activeDataType} />
-          )}
-        </Suspense>
+      <div className="flex-1 min-h-0 pt-6">
+        <div className="h-full overflow-y-auto">
+          <Suspense fallback={<DashboardChartsSkeleton />}>
+            {loading ? (
+              <DashboardChartsSkeleton />
+            ) : (
+              <DashboardCharts data={data} dataType={activeDataType} />
+            )}
+          </Suspense>
+        </div>
       </div>
     </div>
   );
