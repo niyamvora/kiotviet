@@ -1,6 +1,6 @@
 /**
  * KiotViet API integration service
- * Handles authentication and data fetching from KiotViet APIs
+ * Now uses backend API routes to avoid CORS issues
  */
 
 interface KiotVietCredentials {
@@ -19,7 +19,6 @@ interface KiotVietResponse<T> {
 class KiotVietAPI {
   private credentials: KiotVietCredentials | null = null;
   private accessToken: string | null = null;
-  private baseURL = "https://public.kiotapi.com";
 
   constructor(credentials?: KiotVietCredentials) {
     if (credentials) {
@@ -41,74 +40,84 @@ class KiotVietAPI {
       throw new Error("KiotViet credentials not set");
     }
 
-    const response = await fetch(`${this.baseURL}/oauth2/token`, {
-      method: "POST",
+    console.log('🔐 Authenticating via backend API...');
+
+    // Use our backend API route instead of direct KiotViet call
+    const response = await fetch('/api/kiotviet/auth', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/json',
       },
-      body: new URLSearchParams({
-        client_id: this.credentials.clientId,
-        client_secret: this.credentials.secretKey,
-        grant_type: "client_credentials",
-        scopes: "PublicApi.Access",
+      body: JSON.stringify({
+        clientId: this.credentials.clientId,
+        secretKey: this.credentials.secretKey,
       }),
     });
 
     if (!response.ok) {
-      throw new Error("Failed to authenticate with KiotViet API");
+      const errorData = await response.json().catch(() => ({ error: 'Authentication failed' }));
+      throw new Error(`Authentication failed: ${errorData.error}`);
     }
 
     const data = await response.json();
     this.accessToken = data.access_token;
 
     if (!this.accessToken) {
-      throw new Error("No access token received from KiotViet API");
+      throw new Error("No access token received");
     }
 
+    console.log('✅ Authentication successful');
     return this.accessToken;
   }
 
-  private async apiRequest<T>(
-    endpoint: string,
-    options?: RequestInit
-  ): Promise<KiotVietResponse<T>> {
+  private async apiRequest<T>(endpoint: string, params: any = {}): Promise<KiotVietResponse<T>> {
     const token = await this.authenticate();
 
-    const response = await fetch(`${this.baseURL}${endpoint}`, {
-      ...options,
+    if (!this.credentials?.retailer) {
+      throw new Error("Retailer name is required");
+    }
+
+    console.log(`📡 Making API request to ${endpoint}...`);
+
+    // Use our backend API routes instead of direct KiotViet calls
+    const response = await fetch(`/api/kiotviet/${endpoint}`, {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
-        Retailer: this.credentials?.retailer || "chezbebe",
-        "Content-Type": "application/json",
-        ...options?.headers,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        accessToken: token,
+        retailer: this.credentials.retailer,
+        ...params,
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(
-        `KiotViet API error: ${response.status} ${response.statusText}`
-      );
+      const errorData = await response.json().catch(() => ({ error: 'API request failed' }));
+      throw new Error(`${endpoint} API failed: ${errorData.error}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log(`✅ ${endpoint} request successful`);
+    return data;
   }
 
   // Products API
   async getProducts(skip: number = 0, take: number = 100) {
-    return this.apiRequest<any[]>(`/products?skip=${skip}&take=${take}`);
+    return this.apiRequest<any[]>('products', { skip, take });
   }
 
   async getProductById(id: number) {
-    return this.apiRequest<any>(`/products/${id}`);
+    return this.apiRequest<any>('products', { id });
   }
 
   // Customers API
   async getCustomers(skip: number = 0, take: number = 100) {
-    return this.apiRequest<any[]>(`/customers?skip=${skip}&take=${take}`);
+    return this.apiRequest<any[]>('customers', { skip, take });
   }
 
   async getCustomerById(id: number) {
-    return this.apiRequest<any>(`/customers/${id}`);
+    return this.apiRequest<any>('customers', { id });
   }
 
   // Orders API
@@ -118,14 +127,11 @@ class KiotVietAPI {
     fromDate?: string,
     toDate?: string
   ) {
-    let endpoint = `/orders?skip=${skip}&take=${take}`;
-    if (fromDate) endpoint += `&fromDate=${fromDate}`;
-    if (toDate) endpoint += `&toDate=${toDate}`;
-    return this.apiRequest<any[]>(endpoint);
+    return this.apiRequest<any[]>('orders', { skip, take, fromDate, toDate });
   }
 
   async getOrderById(id: number) {
-    return this.apiRequest<any>(`/orders/${id}`);
+    return this.apiRequest<any>('orders', { id });
   }
 
   // Invoices API
@@ -135,24 +141,21 @@ class KiotVietAPI {
     fromDate?: string,
     toDate?: string
   ) {
-    let endpoint = `/invoices?skip=${skip}&take=${take}`;
-    if (fromDate) endpoint += `&fromDate=${fromDate}`;
-    if (toDate) endpoint += `&toDate=${toDate}`;
-    return this.apiRequest<any[]>(endpoint);
+    return this.apiRequest<any[]>('invoices', { skip, take, fromDate, toDate });
   }
 
   async getInvoiceById(id: number) {
-    return this.apiRequest<any>(`/invoices/${id}`);
+    return this.apiRequest<any>('invoices', { id });
   }
 
   // Categories API
   async getCategories() {
-    return this.apiRequest<any[]>("/categories");
+    return this.apiRequest<any[]>('categories');
   }
 
-  // Branches API
+  // Branches API  
   async getBranches() {
-    return this.apiRequest<any[]>("/branches");
+    return this.apiRequest<any[]>('branches');
   }
 
   // Analytics helpers

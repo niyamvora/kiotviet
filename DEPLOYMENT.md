@@ -3,6 +3,7 @@
 ## 🚀 Quick Deployment Steps
 
 ### 1. Deploy to Vercel
+
 1. Go to [vercel.com](https://vercel.com) and sign in with GitHub
 2. Click "New Project"
 3. Import your GitHub repository: `niyamvora/kiotviet`
@@ -10,9 +11,11 @@
 5. Click "Deploy"
 
 ### 2. Configure Environment Variables
+
 After deployment, add these environment variables in Vercel dashboard:
 
 #### Required Environment Variables:
+
 ```bash
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
@@ -25,6 +28,7 @@ SECRET_KEY=your_kiotviet_secret_key
 ```
 
 ### 3. Set Up Supabase Database
+
 Run this SQL in your Supabase SQL editor:
 
 ```sql
@@ -39,7 +43,7 @@ CREATE TABLE user_credentials (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create user_preferences table  
+-- Create user_preferences table
 CREATE TABLE user_preferences (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -57,7 +61,7 @@ ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage own credentials" ON user_credentials
   FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage own preferences" ON user_preferences  
+CREATE POLICY "Users can manage own preferences" ON user_preferences
   FOR ALL USING (auth.uid() = user_id);
 ```
 
@@ -66,12 +70,14 @@ CREATE POLICY "Users can manage own preferences" ON user_preferences
 ### Demo Mode vs Live Mode
 
 **🎯 Demo Mode (Default):**
+
 - Shows realistic sample data for Vietnamese retail business
 - No KiotViet credentials required
 - Perfect for testing and previewing the dashboard
 - Clearly marked with "📊 Demo Mode" status
 
 **🔗 Live Mode (After Credentials Setup):**
+
 - Fetches real data from KiotViet API
 - Requires valid KiotViet API credentials
 - Shows actual business metrics from user's store
@@ -80,23 +86,25 @@ CREATE POLICY "Users can manage own preferences" ON user_preferences
 ### How Data Integration Works:
 
 1. **User visits dashboard** → Shows demo data initially
-2. **User goes to Settings** → Enters KiotViet API credentials  
+2. **User goes to Settings** → Enters KiotViet API credentials
 3. **Credentials saved** → Dashboard automatically switches to live data
 4. **API failure/issues** → Gracefully falls back to demo data with error message
 
 ## 🔧 Testing the Deployment
 
 ### Test Demo Mode:
+
 1. Visit your deployed URL
 2. Sign up for a new account
 3. Dashboard should show demo data with Vietnam business metrics
 4. All charts and analytics should work smoothly
 
 ### Test Live Mode:
-1. Go to Settings page  
+
+1. Go to Settings page
 2. Enter valid KiotViet API credentials:
    - Client ID
-   - Secret Key  
+   - Secret Key
    - Shop Name
 3. Save credentials
 4. Return to dashboard - should now show live data
@@ -105,6 +113,7 @@ CREATE POLICY "Users can manage own preferences" ON user_preferences
 ## 🌍 Production URL Structure
 
 Your app will be available at:
+
 ```
 https://your-project-name.vercel.app
 ```
@@ -112,6 +121,7 @@ https://your-project-name.vercel.app
 ## 🔍 Monitoring & Debugging
 
 ### Check Data Source:
+
 - Open browser developer console
 - Look for these logs:
   - `📊 Using demo data - No KiotViet credentials found`
@@ -120,6 +130,7 @@ https://your-project-name.vercel.app
   - `❌ Error fetching live data, falling back to demo`
 
 ### Vercel Function Logs:
+
 - Go to Vercel dashboard → Functions tab
 - Monitor API call performance and errors
 - Check for timeout issues (30s limit set)
